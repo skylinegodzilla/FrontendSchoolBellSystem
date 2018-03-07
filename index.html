@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+		//Setup					
+			//Strings that get sent to server	//Values that get sent to the server
+			strBell = "";						//&BELL=1
+			strEvacuate = "";					//&EVAC=1
+			strLockDown = "";					//&LOCKDOWN=1
+			strBellAuto = "";					//&BELLAUTO=1
+			strBellManual = "";					//&BELLMANUAL=1
+			strCancel = "";						//&CANCEL=1
+			
+			var alarmButtonMappingArray = ["BellID","EvacID","LockDownID"]; //maps the alarm buttonID's to an index value
+		
+		
+		//Ajax XML Request
+			function getArduinoXMLReq() 
+			{
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() 
+				{
+					if (this.readyState == 4 && this.status == 200) 
+					{
+						// XML file received - contains values for the bells and there states.
+						//This is where we do stuff the infomation from the server
+						
+						
+						//Bell
+						if(this.responseXML.getElementsByTagName('Bells')[0].childNodes[0].nodeValue == "on")
+						{
+							document.getElementById("BellID").className = "buttonOn";
+						}
+						else	
+						{
+							document.getElementById("BellID").className = "buttonOff";
+						}
+						
+						//Bell Mode
+						if(this.responseXML.getElementsByTagName('BellsMode')[0].childNodes[0].nodeValue == "0")
+						{	
+							//Manual
+							document.getElementById("BellAutoButton").className = "bellModeOff";
+							document.getElementById("BellManualButton").className = "bellModeOn";
+						}
+						else	
+						{
+							//Auto
+							document.getElementById("BellAutoButton").className = "bellModeOn";
+							document.getElementById("BellManualButton").className = "bellModeOff";
+						}
+						//Evac
+						if(this.responseXML.getElementsByTagName('Evac')[0].childNodes[0].nodeValue == "on")
+						{
+							document.getElementById("EvacID").className = "buttonOn";
+						}
+						else	
+						{
+							document.getElementById("EvacID").className = "buttonOff";
+						}
+						//Evac countdown
+						document.getElementById("EvacCountDownID").innerHTML= this.responseXML.getElementsByTagName('EvacCountDown')[0].childNodes[0].nodeValue;
+						
+						//LockDown
+						if(this.responseXML.getElementsByTagName('LockDown')[0].childNodes[0].nodeValue == "on")
+						{
+							document.getElementById("LockDownID").className = "buttonOn";
+						}
+						else	
+						{
+							document.getElementById("LockDownID").className = "buttonOff";
+						}
+						//LockDown countdown
+						document.getElementById("LockDownCountDownID").innerHTML= this.responseXML.getElementsByTagName('LockDownCountDown')[0].childNodes[0].nodeValue;
+						
+						//Error concole ErrorConsoleWindow
+						document.getElementById("ErrorConsoleWindow").innerHTML= this.responseXML.getElementsByTagName('ConsoleError')[0].childNodes[0].nodeValue;
+						
+						//Cancel button CancelActive
+						if(this.responseXML.getElementsByTagName('CancelActive')[0].childNodes[0].nodeValue == "0")
+						{
+							document.getElementById("CancelID").classList.add("disabled");
+						}
+						else
+						{
+							document.getElementById("CancelID").classList.remove("disabled");
+						}
+					}
+				};
+				xhttp.open("GET", "DummyXMLRequest.xml", true);//This is where we talk to the server using get, we send back strings for the server to read
+				xhttp.setRequestHeader('Cache-Control', 'no-cache');
+				xhttp.send(null);
+				setTimeout('getArduinoXMLReq()', 500);
+				//Clear the strings so that they are not sent to the server agane
+				strBell = "";
+				strEvacuate = "";
+				strLockDown = "";
+				strBellAuto = "";
+				strBellManual = "";
+				strCancel = "";
+				
+			}	
+			
+		//Utilities functions
+			//Check if an element has got a given class returns true/false
+			function gotClass(element, cls)
+			{
+				return (' ' + element.className + ' ').indexOf(' ' + cls + ' ') > -1;
+			}
+			//Check if an element is disabled
+			function isDisabled(element)
+			{
+				return gotClass(document.getElementById(element), 'disabled');
+			}
+			
+			//Check if an alarm button is on
+			function alarmIsOn(element)
+			{
+				return gotClass(document.getElementById(element), 'buttonOn');
+			}
+			
+		//Button functions
+			//Alarm buttons
+			function activateAlarm(alarmIndex)
+			{
+				//Skip the function if the button is disabled
+				if(isDisabled(alarmButtonMappingArray[alarmIndex]))
+					{return;}
+				
+				//Skip the function if the alarm is currentley active				
+				if(alarmIsOn(alarmButtonMappingArray[alarmIndex]))
+					{return;}
+				
+				switch(alarmIndex) 
+				{
+					case 0: //Bell
+						strBell = "&BELL=1";
+						//alert('Bells actavated');
+						break;
+					case 1:	//Evacuate
+						//Display an confirm box
+						if(confirm("Are you sure you want to actavate evacuate?.")== true)
+							{
+								strEvacuate="&EVAC=1";
+								//alert('Done');
+							}
+						break;
+					case 2:	//Lockdown
+						//Display a confirm box	
+						if(confirm("Are you sure you want to actavate lockdown?.")== true)
+							{
+								strLockDown="&LOCKDOWN=1";
+								//alert('Done');
+							}
+						break;
+					default:
+						alert('TEST: alarm index is out of bounds');
+				}	
+				return;	
+			}
+			
+			//Cancel button
+			function cancelAlarm()
+			{
+				//Skip the function if the button is disabled
+				if(isDisabled("CancelID"))
+					{return;}
+				
+				//set the strCancel value for sending to the server
+				strCancel = "&CANCEL=1";
+				//alert("Alarm canceled.")
+			}
+			
+			//Bell modes buttons
+			function bellMode(modeID)
+			{
+				//skip the function if the mode is allredy on
+				if(gotClass(document.getElementById(modeID), 'bellModeOn'))
+					{return;}
+				
+				switch(modeID)
+				{
+					case "BellAutoButton":
+						strBellAuto = "&BELLAUTO=1";
+						//alert("AutoMode on.");
+						break;
+						
+					case "BellManualButton":
+						strBellManual = "&BELLMANUAL=1";
+						//alert("ManualMode on.");
+						break;
+					
+					default:
+						alert("bell mode ID not found.");
+				}
+			}	
+		</script>
+		<style>
+			@keyframes armedAnim 
+			{
+				0%   {border: 4px solid #f44336;}
+				50%  {border: 4px solid white;}
+				100% {border: 4px solid #f44336;}
+			}
+			
+			body 
+			{
+				background-color: #01518b;
+				font-size: 75%;
+				font-family: Arial,Helvetica,Sans-Serif;
+				margin: 0;
+				padding: 0;
+				color: #fff;
+				background-image: url(img/bg.png);
+				background-attachment: fixed;
+				background-repeat: repeat;
+			}
+			
+			#BodyDiv
+			{
+				width: 800px;
+				border: 0px solid white;
+				position:absolute;
+				left: 0;
+				right: 0;
+				margin: 0 auto;
+			}
+			.bgGradient 
+			{
+				background: url(img/bgPageBlue.png) repeat-x scroll 0 0 #1b91d5;
+				height: 1024px;
+				width: 100%;
+				position: absolute;
+			}
+			.bgPattern 
+			{
+				background:url(img/bgPagePattern.png) repeat scroll center top transparent;
+				height: 50px;
+				top: 0;
+				
+			}
+			.IO_box 
+			{
+				float: left;
+				margin: 0 20px 20px 0;
+				border: 0px solid white;
+				padding: 0 5px 0 5px;
+				width: auto;
+			}
+			h1 
+			{
+				font-family: "Arial", Georgia, Sans-Serif;
+				font-size: 40px;
+				color: white;
+				
+				margin: 0px;
+				padding: 20px 20px 0px 20px;
+			}
+			h2
+			{
+				font-family: "Tahoma", Georgia, Sans-Serif;
+				font-size: 25px;
+				color: white;
+				margin: 0px 20px 20px 20px;
+			}
+			h3
+			{
+				font-family: "Tahoma", Georgia, Sans-Serif;
+				font-size: 16px;
+				color: white;
+				margin: 0px;
+			}
+			.buttonOff 
+			{
+				background-color: #4b4b4b; /* Black */
+				border: 4px solid #2b2b2b;
+				color: white;
+				border-radius: 10px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 25px;
+				width: 300px;
+				height: 150px;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+				
+				margin: 20px;
+			}
+			.buttonOff:not(.disabled):hover
+			{
+				background-color: white;
+				color: #4CAF50;
+				border-color: #4CAF50;
+			}
+			
+			.buttonOff:not(.disabled):active 
+			{
+				background-color: #3e8e41;
+				font-size: 30px;
+				transition-duration: 0.1s;
+			}
+			
+			.buttonOn 
+			{
+				background-color: #f44336; /* Red */ 
+				border: 4px solid #f44336;
+				color: white;
+				border-radius: 10px;	
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 25px;
+				width: 300px;
+				height: 150px;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+				animation-name: armedAnim;
+				animation-duration: 1s;
+				animation-iteration-count: infinite;
+				
+				margin: 20px;
+			}
+			.buttonOn:not(.disabled):hover
+			{
+				background-color: #ff5d51;
+				color: white;
+				border-color: white;
+				font-size: 20px;
+				
+				
+			}
+			.buttonOn:not(.disabled):hover:after
+			{
+				content: "Press Cancel to stop Alarm";
+			}
+			.buttonCancel
+			{
+				background-color: #f44336;
+				border: 2px solid white;
+				color: white;
+				border-radius: 10px;
+				
+				text-align: center;
+				font-size: 30px;
+				width: 200px;
+				height: 100px;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.2s;
+			}
+			
+			.buttonCancel:not(.disabled):hover
+			{
+				background-color: white;
+				color: #f44336;
+				border-color: #f44336;
+			}
+			
+			.buttonCancel:not(.disabled):active 
+			{
+				background-color: #f44336;
+				border-color: #000000;
+				font-size: 50px;
+				color: white;
+				transform: translateY(1px);
+			}
+			
+			.disabled 
+			{
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+			
+			p, form 
+			{
+				font-size: 80%;
+				color: #252525;
+			}
+			
+			.small_text 
+			{
+				font-size: 70%;
+				color: #737373;
+			}
+			.buttonContent
+			{
+				
+				width: auto;
+				height: auto;
+			}
+			.countDown
+			{
+				background-color: white;
+				color: #f44336;
+				height: 1.2em;
+				width: 4.5em;
+				margin: 0 auto;
+				border-bottom-left-radius: 10px;
+				border-bottom-right-radius: 10px;
+				font-weight: bold;
+			}
+			#BellAutoButton
+			{
+				width: 175px;
+				height: 70px;
+				margin-top: 20px;
+			}
+			
+			#BellManualButton
+			{
+				width: 175px;
+				height: 70px;
+				margin-bottom: 20px;
+			}
+			
+			.bellModeOn 
+			{
+				background-color: #4CAF50; /* Green */
+				border: 2px solid white;
+				color: white;
+				border-radius: 10px;
+				text-align: center;
+				text-decoration: none;
+				font-size: 25px;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+				content: " ON";
+			}
+			.bellModeOn:not(.disabled):hover
+			{
+				background-color: white;
+				color: #2b2b2b;
+				border-color:#2b2b2b;
+			}
+			
+			.bellModeOn:not(.disabled):active 
+			{
+				background-color: white;
+				font-size: 30px;
+				transition-duration: 0.1s;
+			}
+			
+			.bellModeOff 
+			{
+				background-color: #4b4b4b; /* Black */
+				border: 2px solid #2b2b2b;
+				color: white;
+				border-radius: 10px;
+				text-align: center;
+				text-decoration: none;
+				font-size: 25px;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+				
+			}
+			
+			.bellModeOff:not(.disabled):hover
+			{
+				background-color: white;
+				color: #4CAF50;
+				border-color: #4CAF50;
+			}
+			
+			.bellModeOff:not(.disabled):active 
+			{
+				background-color: white;
+				font-size: 30px;
+				transition-duration: 0.1s;
+			}
+			
+			
+			#AlarmBox
+			{
+				float: left;
+			}
+			#BellModeBox
+			{
+				float: left;
+				width: 175px;
+			}
+			
+			#CancelBox
+			{
+				margin-top: 100px;
+				float: left;
+			}
+			#BgLogo
+			{
+				float: right;
+				background:url(img/logo.png);
+				margin: 0 auto;
+				width: 400px;
+				height: 510px;
+				top: 10%;
+				right: 0px;
+				left: 50%;
+				
+				position: absolute;
+			}
+			#BodyContainer{
+				position: relative;
+			}
+			#SpacerDiv
+			{
+				margin: 20px;
+			}
+			#ErrorConsoleBox
+			{
+				border: 1px solid white;
+				margin: 0 auto;
+				border-radius: 10px;
+			
+			}
+			#ErrorConsoleWindow
+			{
+				background-color: white;
+				color: #f44336;
+				border: 0 solid #f44336;				
+				width: 800px;
+				height: 200px;
+				padding: 10px;
+				margin: 10px;
+				border-radius: 10px;
+				overflow: auto;
+			}	
+		</style>
+	</head>
+	<body onload="getArduinoXMLReq()">
+		<div id="BodyContainer">
+			<div class="bgGradient">
+				<div class="bgPattern">
+				</div>
+				<div id="BgLogo">
+				</div>	
+			</div>
+			<div id="BodyDiv">
+				<h1>WCS Bell System</h1> 
+				<h2>Authorised use only!</h2>
+				<div id="SpacerDiv" style="height: 10px;"></div>
+
+			
+		
+				<div class="IO_box" id="AlarmBox">
+					<h3>Alarm Buttons</h3>
+					<button onclick="activateAlarm(0)" id="BellID" class="buttonOff"><div class="buttonContent">Bell</div></button><br>	
+					<button onclick="activateAlarm(1)" id="EvacID" class="buttonOff"><div class="buttonContent">Evacuate</div><div id="EvacCountDownID" class="countDown">0</div></button><br>	
+					<button onclick="activateAlarm(2)" id="LockDownID" class="buttonOff"><div class="buttonContent">Lock Down</div><div id="LockDownCountDownID" class="countDown">0</div></button><br>
+				</div>
+				<div class="IO_box" id="BellModeBox">
+					<h3>Bell Mode</h3>
+					<button onclick="bellMode('BellAutoButton')" id="BellAutoButton" class="bellModeOff">Auto</button>
+					<button onclick="bellMode('BellManualButton')"id="BellManualButton" class="bellModeOn">Manual</button>
+				</div>
+				<div class="IO_box" id="CancelBox">
+					<h3>Cancel the current alarm</h3>
+					<button onclick="cancelAlarm()" id="CancelID" class="buttonCancel disabled"><b>Cancel</b></button>
+				</div>
+				<div class="IO_box" id="ErrorConsoleBox">
+					<h3>Error Console</h3>
+					<div id="ErrorConsoleWindow">
+						If you can read this then there has been an error reading the XML file.<br>
+					</div>
+				</div>
+				
+			
+			</div>
+		</div>
+		
+
+	</body>
+</html>

@@ -1,0 +1,11 @@
+<?xml version = "1.0" ?>
+<inputs>
+    <Bells>off</Bells>
+	<BellsMode>1</BellsMode>
+    <Evac>off</Evac>
+	<EvacCountDown>0</EvacCountDown>
+    <LockDown>off</LockDown>
+	<LockDownCountDown>0</LockDownCountDown>
+	<CancelActive>0</CancelActive>
+	<ConsoleError>HelloWorld</ConsoleError>
+</inputs>
